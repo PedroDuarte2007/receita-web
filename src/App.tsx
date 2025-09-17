@@ -1,235 +1,156 @@
 import './App.css'
 import { useState, useEffect } from 'react'
-
-type Receita = {
-  id: number;
-  nome: string;
-  tipo?: string;
-  ingredientes: string[];
-  modoFazer: string;
-  img: string;
-  custoAproximado?: number;
-};
+import axios from 'axios'
 
 function App() {
-  const [receitas, setReceitas] = useState<Receita[]>([]);
-  const [modalReceita, setModalReceita] = useState<Receita | null>(null);
-  const [isEditModal, setIsEditModal] = useState(false);
-  const [isCreateModal, setIsCreateModal] = useState(false);
-  const [erroConexao, setErroConexao] = useState<string | null>(null);
+  const url = 'https://receitasapi-b-2025.vercel.app/receitas'
+  const [receitas, setReceitas] = useState<any[]>([])
 
-  const [novoNome, setNovoNome] = useState('');
-  const [novosIngredientes, setNovosIngredientes] = useState<string[]>(['']);
-  const [novoModoFazer, setNovoModoFazer] = useState('');
-  const [novaImg, setNovaImg] = useState('');
-  const [novoTipo, setNovoTipo] = useState('');
-  const [novoCusto, setNovoCusto] = useState<number>(0);
+  const [novoNome, setNovoNome] = useState("")
+  const [novoTipo, setNovoTipo] = useState("")
+  const [novoIngredientes, setNovoIngredientes] = useState("")
+  const [novoModoFazer, setNovoModoFazer] = useState("")
+  const [novaImg, setNovaImg] = useState("")
+  const [novoCusto, setNovoCusto] = useState("")
 
-  // URL da API no Vercel
-  const API_URL = 'https://receitasapi-b-2025.vercel.app/receitas';
+  const [editandoId, setEditandoId] = useState<number | null>(null)
+  const [textoEdicao, setTextoEdicao] = useState<any>({})
 
-  // Buscar todas as receitas
-  const fetchReceitas = async () => {
-    try {
-      setErroConexao(null);
-      const res = await fetch(API_URL);
-      if (!res.ok) throw new Error(`Erro ao buscar receitas: ${res.status}`);
-      const data = await res.json();
-      setReceitas(data);
-    } catch (err) {
-      console.error(err);
-      setErroConexao('Não foi possível conectar à API. Verifique a URL.');
-    }
-  };
+  // Função para obter dados da API
+  function obterDados() {
+    axios.get(url).then((response) => {
+      console.log("API retornou:", response.data)
+      setReceitas(response.data)
+    }).catch(err => console.error("Erro ao obter receitas:", err))
+  }
 
   useEffect(() => {
-    fetchReceitas();
-  }, []);
+    obterDados()
+  }, [])
 
-  // Excluir receita
-  const excluirReceita = async (id: number) => {
+  // Adicionar nova receita
+  async function adicionarReceita() {
+    if (!novoNome || !novoTipo) return;
+
+    const novaReceita = {
+      nome: novoNome,
+      tipo: novoTipo,
+      ingredientes: novoIngredientes,
+      modoFazer: novoModoFazer,
+      img: novaImg,
+      custoAproximado: novoCusto ? parseFloat(novoCusto) : 0
+    };
+
     try {
-      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      const response = await axios.post(url, novaReceita);
+      setReceitas([...receitas, response.data]);
+      // Reset dos inputs
+      setNovoNome(""); setNovoTipo(""); setNovoIngredientes("");
+      setNovoModoFazer(""); setNovaImg(""); setNovoCusto("");
+    } catch (error) {
+      console.error("Erro ao adicionar receita:", error);
+    }
+  }
+
+  // Atualizar receita
+  async function atualizarReceita(id: number) {
+    try {
+      const dadosAtualizados = {
+        ...textoEdicao,
+        custoAproximado: parseFloat(textoEdicao.custoAproximado)
+      };
+      const response = await axios.put(`${url}/${id}`, dadosAtualizados);
+      setReceitas(receitas.map(r => r.id === id ? response.data : r));
+      setEditandoId(null);
+      setTextoEdicao({});
+    } catch (error) {
+      console.error("Erro ao atualizar receita:", error);
+    }
+  }
+
+  // Remover receita
+  async function removerReceita(id: number) {
+    try {
+      await axios.delete(`${url}/${id}`);
       setReceitas(receitas.filter(r => r.id !== id));
-    } catch (err) {
-      console.error(err);
-      setErroConexao('Erro ao excluir a receita.');
+    } catch (error) {
+      console.error("Erro ao remover receita:", error);
     }
-  };
-
-  // Abrir modal de edição
-  const editarReceita = (receita: Receita) => {
-    setModalReceita(receita);
-    setNovoNome(receita.nome);
-    setNovosIngredientes(receita.ingredientes);
-    setNovoModoFazer(receita.modoFazer);
-    setNovaImg(receita.img);
-    setNovoTipo(receita.tipo || '');
-    setNovoCusto(receita.custoAproximado || 0);
-    setIsEditModal(true);
-  };
-
-  // Salvar edição
-  const salvarReceitaEditada = async () => {
-    if (!modalReceita) return;
-    const payload = {
-      nome: novoNome,
-      tipo: novoTipo,
-      ingredientes: novosIngredientes,
-      modoFazer: novoModoFazer,
-      img: novaImg,
-      custoAproximado: novoCusto,
-    };
-
-    try {
-      await fetch(`${API_URL}/${modalReceita.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      fetchReceitas();
-      setIsEditModal(false);
-      setModalReceita(null);
-    } catch (err) {
-      console.error(err);
-      setErroConexao('Erro ao editar a receita.');
-    }
-  };
-
-  // Salvar nova receita
-  const salvarNovaReceita = async () => {
-    const payload = {
-      nome: novoNome,
-      tipo: novoTipo,
-      ingredientes: novosIngredientes,
-      modoFazer: novoModoFazer,
-      img: novaImg,
-      custoAproximado: novoCusto,
-    };
-
-    try {
-      await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      fetchReceitas();
-      setIsCreateModal(false);
-    } catch (err) {
-      console.error(err);
-      setErroConexao('Erro ao criar a receita.');
-    }
-  };
-
-  const abrirModalCriacao = () => {
-    setNovoNome('');
-    setNovosIngredientes(['']);
-    setNovoModoFazer('');
-    setNovaImg('');
-    setNovoTipo('');
-    setNovoCusto(0);
-    setIsCreateModal(true);
-  };
-
-  const closeModal = () => {
-    setModalReceita(null);
-    setIsEditModal(false);
-    setIsCreateModal(false);
-  };
+  }
 
   return (
     <>
       <header>
-        <h1>Receitas</h1>
+        <h1>Livro de Receitas</h1>
       </header>
 
-      {erroConexao && <p style={{ color: 'red', textAlign: 'center' }}>{erroConexao}</p>}
+      <div className="form-adicionar">
+        <h3>Adicionar Receita</h3>
+        <input placeholder="Nome" value={novoNome} onChange={e => setNovoNome(e.target.value)} />
+        <input placeholder="Tipo" value={novoTipo} onChange={e => setNovoTipo(e.target.value)} />
+        <input placeholder="Ingredientes" value={novoIngredientes} onChange={e => setNovoIngredientes(e.target.value)} />
+        <input placeholder="Modo de Fazer" value={novoModoFazer} onChange={e => setNovoModoFazer(e.target.value)} />
+        <input placeholder="URL da Imagem" value={novaImg} onChange={e => setNovaImg(e.target.value)} />
+        <input placeholder="Custo Aproximado" value={novoCusto} onChange={e => setNovoCusto(e.target.value)} />
+        <button onClick={adicionarReceita}>Adicionar</button>
+      </div>
 
       <main>
-        {receitas.map((r) => (
-          <div key={r.id} className="card">
-            <h2>{r.nome}</h2>
-            <img src={r.img} alt={r.nome} />
-            <button onClick={() => setModalReceita(r)}>Ver Receita</button>
-            <button onClick={() => editarReceita(r)}>Editar</button>
-            <button onClick={() => excluirReceita(r.id)}>Excluir</button>
-          </div>
-        ))}
-        <div className="card nova-receita" onClick={abrirModalCriacao}>
-          <h2>+</h2>
-        </div>
-      </main>
-
-      {(modalReceita || isCreateModal) && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>{isEditModal ? 'Editar Receita' : isCreateModal ? 'Criar Receita' : 'Ver Receita'}</h2>
-
-            {(isEditModal || isCreateModal) ? (
+        {receitas.map(receita => (
+          <div key={receita.id} className="card">
+            {editandoId === receita.id ? (
               <>
                 <input
-                  type="text"
-                  placeholder="Nome"
-                  value={novoNome}
-                  onChange={(e) => setNovoNome(e.target.value)}
+                  value={textoEdicao.nome}
+                  onChange={e => setTextoEdicao({ ...textoEdicao, nome: e.target.value })}
                 />
                 <input
-                  type="text"
-                  placeholder="Tipo (DOCE, SALGADA, BEBIDA)"
-                  value={novoTipo}
-                  onChange={(e) => setNovoTipo(e.target.value)}
-                />
-                <textarea
-                  placeholder="Modo de Fazer"
-                  value={novoModoFazer}
-                  onChange={(e) => setNovoModoFazer(e.target.value)}
-                />
-                <h3>Ingredientes:</h3>
-                {novosIngredientes.map((ing, idx) => (
-                  <input
-                    key={idx}
-                    type="text"
-                    value={ing}
-                    onChange={(e) => {
-                      const ingCopy = [...novosIngredientes];
-                      ingCopy[idx] = e.target.value;
-                      setNovosIngredientes(ingCopy);
-                    }}
-                  />
-                ))}
-                <button onClick={() => setNovosIngredientes([...novosIngredientes, ''])}>
-                  Adicionar Ingrediente
-                </button>
-                <input
-                  type="text"
-                  placeholder="URL da Imagem"
-                  value={novaImg}
-                  onChange={(e) => setNovaImg(e.target.value)}
+                  value={textoEdicao.tipo}
+                  onChange={e => setTextoEdicao({ ...textoEdicao, tipo: e.target.value })}
                 />
                 <input
-                  type="number"
-                  placeholder="Custo Aproximado"
-                  value={novoCusto}
-                  onChange={(e) => setNovoCusto(Number(e.target.value))}
+                  value={textoEdicao.ingredientes}
+                  onChange={e => setTextoEdicao({ ...textoEdicao, ingredientes: e.target.value })}
                 />
-                <button onClick={isEditModal ? salvarReceitaEditada : salvarNovaReceita}>
-                  Salvar
-                </button>
+                <input
+                  value={textoEdicao.modoFazer}
+                  onChange={e => setTextoEdicao({ ...textoEdicao, modoFazer: e.target.value })}
+                />
+                <input
+                  value={textoEdicao.img}
+                  onChange={e => setTextoEdicao({ ...textoEdicao, img: e.target.value })}
+                />
+                <input
+                  value={textoEdicao.custoAproximado}
+                  onChange={e => setTextoEdicao({ ...textoEdicao, custoAproximado: e.target.value })}
+                />
+                <button onClick={() => atualizarReceita(receita.id)}>Salvar</button>
+                <button onClick={() => setEditandoId(null)}>Cancelar</button>
               </>
             ) : (
               <>
-                <h3>Ingredientes:</h3>
-                <ul>{modalReceita?.ingredientes.map((i, idx) => <li key={idx}>{i}</li>)}</ul>
-                <h3>Modo de Fazer:</h3>
-                <p>{modalReceita?.modoFazer}</p>
+                <h2>{receita.nome}</h2>
+                {receita.img && <img src={receita.img} alt={receita.nome} />}
+                <p>Tipo: {receita.tipo}</p>
+                <p>Ingredientes: {receita.ingredientes}</p>
+                <p>Modo de Fazer: {receita.modoFazer}</p>
+                <p>Custo: R$ {receita.custoAproximado}</p>
+                <button onClick={() => {
+                  setEditandoId(receita.id);
+                  setTextoEdicao({ ...receita, custoAproximado: String(receita.custoAproximado) });
+                }}>Editar</button>
+                <button onClick={() => removerReceita(receita.id)}>Excluir</button>
               </>
             )}
-            <button onClick={closeModal}>Fechar</button>
           </div>
-        </div>
-      )}
+        ))}
+      </main>
+
+      <footer>
+        <h2>By Rebecaalimaa</h2>
+      </footer>
     </>
-  );
+  )
 }
 
-export default App;
+export default App
