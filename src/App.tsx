@@ -3,10 +3,12 @@ import { useState, useEffect } from 'react'
 
 type Receita = {
   id: number;
-  titulo: string;
+  nome: string;
+  tipo?: string;
   ingredientes: string[];
-  modoPreparo: string;
-  imagem: string;
+  modoFazer: string;
+  img: string;
+  custoAproximado?: number;
 };
 
 function App() {
@@ -14,110 +16,121 @@ function App() {
   const [modalReceita, setModalReceita] = useState<Receita | null>(null);
   const [isEditModal, setIsEditModal] = useState(false);
   const [isCreateModal, setIsCreateModal] = useState(false);
+  const [erroConexao, setErroConexao] = useState<string | null>(null);
 
-  const [novoTitulo, setNovoTitulo] = useState('');
-  const [novosIngredientes, setNovosIngredientes] = useState<string[]>([]);
-  const [novoModoPreparo, setNovoModoPreparo] = useState('');
-  const [novaImagem, setNovaImagem] = useState('');
+  const [novoNome, setNovoNome] = useState('');
+  const [novosIngredientes, setNovosIngredientes] = useState<string[]>(['']);
+  const [novoModoFazer, setNovoModoFazer] = useState('');
+  const [novaImg, setNovaImg] = useState('');
+  const [novoTipo, setNovoTipo] = useState('');
+  const [novoCusto, setNovoCusto] = useState<number>(0);
 
-  // Dados simulados de receitas
-  useEffect(() => {
-    const data = [
-      {
-        id: 94,
-        titulo: "Miojo",
-        ingredientes: ["M"],
-        modoPreparo: "M",
-        imagem: "https://ogimg.infoglobo.com.br/in/25191257-11f-f6a/FT1086A/95174042_RS-Rio-de-Janeiro-RJ-09-09-2021O-chef-Rafael-cavalieri-demonstra-versoes-melhoradas-do-m.jpg",
-      },
-      {
-        id: 98,
-        titulo: "Brigadeiro",
-        ingredientes: ["Uma lata de brigadeiro pronto"],
-        modoPreparo: "Abra a lata",
-        imagem: "https://static.itdg.com.br/images/360-240/a373f494abb2c3360b9966f5abe130e2/brigadeiro-.jpg",
-      },
-      {
-        id: 97,
-        titulo: "Ovo frito",
-        ingredientes: ["12 ovos"],
-        modoPreparo: "Frite os ovos",
-        imagem: "https://s2-receitas.glbimg.com/-3gVq-_w-zBEgZlnty0-HVhr00w=/0x0:237x212/984x0/smart/filters:strip_icc()/s.glbimg.com/po/rc/media/2014/01/23/22_16_39_163_images.jpg",
-      },
-      {
-        id: 106,
-        titulo: "Bolo Clash Royale",
-        ingredientes: ["bolo", "clash royale"],
-        modoPreparo: "saber fazer bolo, jogar clash royale",
-        imagem: "https://i.pinimg.com/736x/db/fa/18/dbfa18309255be32153505ff93ce669d.jpg",
-      },
-      {
-        id: 92,
-        titulo: "mandioca",
-        ingredientes: ["mandioca braba"],
-        modoPreparo: "cozinhar",
-        imagem: "https://saude.abril.com.br/wp-content/uploads/2016/12/mandioca.jpg?quality=50&strip=info",
-      },
-    ];
-    setReceitas(data);
-  }, []);
+  // URL da API no Vercel
+  const API_URL = 'https://receitasapi-b-2025.vercel.app/receitas';
 
-  // Função para excluir receita
-  const excluirReceita = (id: number) => {
-    setReceitas(receitas.filter((receita) => receita.id !== id));
+  // Buscar todas as receitas
+  const fetchReceitas = async () => {
+    try {
+      setErroConexao(null);
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error(`Erro ao buscar receitas: ${res.status}`);
+      const data = await res.json();
+      setReceitas(data);
+    } catch (err) {
+      console.error(err);
+      setErroConexao('Não foi possível conectar à API. Verifique a URL.');
+    }
   };
 
-  // Função para abrir o modal de edição
-  const editarReceita = (id: number) => {
-    const receita = receitas.find((r) => r.id === id) || null;
+  useEffect(() => {
+    fetchReceitas();
+  }, []);
+
+  // Excluir receita
+  const excluirReceita = async (id: number) => {
+    try {
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      setReceitas(receitas.filter(r => r.id !== id));
+    } catch (err) {
+      console.error(err);
+      setErroConexao('Erro ao excluir a receita.');
+    }
+  };
+
+  // Abrir modal de edição
+  const editarReceita = (receita: Receita) => {
     setModalReceita(receita);
-    setNovoTitulo(receita?.titulo || '');
-    setNovosIngredientes(receita?.ingredientes || []);
-    setNovoModoPreparo(receita?.modoPreparo || '');
+    setNovoNome(receita.nome);
+    setNovosIngredientes(receita.ingredientes);
+    setNovoModoFazer(receita.modoFazer);
+    setNovaImg(receita.img);
+    setNovoTipo(receita.tipo || '');
+    setNovoCusto(receita.custoAproximado || 0);
     setIsEditModal(true);
   };
 
-  // Função para abrir o modal de criação
+  // Salvar edição
+  const salvarReceitaEditada = async () => {
+    if (!modalReceita) return;
+    const payload = {
+      nome: novoNome,
+      tipo: novoTipo,
+      ingredientes: novosIngredientes,
+      modoFazer: novoModoFazer,
+      img: novaImg,
+      custoAproximado: novoCusto,
+    };
+
+    try {
+      await fetch(`${API_URL}/${modalReceita.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      fetchReceitas();
+      setIsEditModal(false);
+      setModalReceita(null);
+    } catch (err) {
+      console.error(err);
+      setErroConexao('Erro ao editar a receita.');
+    }
+  };
+
+  // Salvar nova receita
+  const salvarNovaReceita = async () => {
+    const payload = {
+      nome: novoNome,
+      tipo: novoTipo,
+      ingredientes: novosIngredientes,
+      modoFazer: novoModoFazer,
+      img: novaImg,
+      custoAproximado: novoCusto,
+    };
+
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      fetchReceitas();
+      setIsCreateModal(false);
+    } catch (err) {
+      console.error(err);
+      setErroConexao('Erro ao criar a receita.');
+    }
+  };
+
   const abrirModalCriacao = () => {
-    setNovoTitulo('');
+    setNovoNome('');
     setNovosIngredientes(['']);
-    setNovoModoPreparo('');
-    setNovaImagem('');
+    setNovoModoFazer('');
+    setNovaImg('');
+    setNovoTipo('');
+    setNovoCusto(0);
     setIsCreateModal(true);
   };
 
-  // Função para salvar nova receita
-  const salvarNovaReceita = () => {
-    const novaReceita: Receita = {
-      id: receitas.length + 1, // Gerar um ID simples
-      titulo: novoTitulo,
-      ingredientes: novosIngredientes,
-      modoPreparo: novoModoPreparo,
-      imagem: novaImagem,
-    };
-
-    setReceitas([...receitas, novaReceita]);
-    setIsCreateModal(false);
-  };
-
-  // Função para salvar as edições
-  const salvarReceitaEditada = () => {
-    if (!modalReceita) return;
-
-    const receitaEditada: Receita = {
-      ...modalReceita,
-      titulo: novoTitulo,
-      ingredientes: novosIngredientes,
-      modoPreparo: novoModoPreparo,
-    };
-
-    setReceitas(receitas.map((receita) =>
-      receita.id === receitaEditada.id ? receitaEditada : receita
-    ));
-    setIsEditModal(false);
-  };
-
-  // Função para fechar o modal
   const closeModal = () => {
     setModalReceita(null);
     setIsEditModal(false);
@@ -129,14 +142,17 @@ function App() {
       <header>
         <h1>Receitas</h1>
       </header>
+
+      {erroConexao && <p style={{ color: 'red', textAlign: 'center' }}>{erroConexao}</p>}
+
       <main>
-        {receitas.map((receita) => (
-          <div key={receita.id} className="card">
-            <h2>{receita.titulo}</h2>
-            <img src={receita.imagem} alt={receita.titulo} />
-            <button onClick={() => setModalReceita(receita)}>Ver Receita</button>
-            <button onClick={() => editarReceita(receita.id)}>Editar</button>
-            <button onClick={() => excluirReceita(receita.id)}>Excluir</button>
+        {receitas.map((r) => (
+          <div key={r.id} className="card">
+            <h2>{r.nome}</h2>
+            <img src={r.img} alt={r.nome} />
+            <button onClick={() => setModalReceita(r)}>Ver Receita</button>
+            <button onClick={() => editarReceita(r)}>Editar</button>
+            <button onClick={() => excluirReceita(r.id)}>Excluir</button>
           </div>
         ))}
         <div className="card nova-receita" onClick={abrirModalCriacao}>
@@ -144,130 +160,70 @@ function App() {
         </div>
       </main>
 
-      {/* Modal */}
       {(modalReceita || isCreateModal) && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>{isEditModal ? 'Editar Receita' : 'Ver Receita'}</h2>
+            <h2>{isEditModal ? 'Editar Receita' : isCreateModal ? 'Criar Receita' : 'Ver Receita'}</h2>
 
-            {isEditModal ? (
+            {(isEditModal || isCreateModal) ? (
               <>
                 <input
                   type="text"
-                  value={novoTitulo}
-                  onChange={(e) => setNovoTitulo(e.target.value)}
+                  placeholder="Nome"
+                  value={novoNome}
+                  onChange={(e) => setNovoNome(e.target.value)}
+                />
+                <input
+                  type="text"
+                  placeholder="Tipo (DOCE, SALGADA, BEBIDA)"
+                  value={novoTipo}
+                  onChange={(e) => setNovoTipo(e.target.value)}
                 />
                 <textarea
-                  value={novoModoPreparo}
-                  onChange={(e) => setNovoModoPreparo(e.target.value)}
+                  placeholder="Modo de Fazer"
+                  value={novoModoFazer}
+                  onChange={(e) => setNovoModoFazer(e.target.value)}
                 />
                 <h3>Ingredientes:</h3>
-                {novosIngredientes.map((ingrediente, idx) => (
+                {novosIngredientes.map((ing, idx) => (
                   <input
                     key={idx}
                     type="text"
-                    value={ingrediente}
+                    value={ing}
                     onChange={(e) => {
-                      const newIngredientes = [...novosIngredientes];
-                      newIngredientes[idx] = e.target.value;
-                      setNovosIngredientes(newIngredientes);
+                      const ingCopy = [...novosIngredientes];
+                      ingCopy[idx] = e.target.value;
+                      setNovosIngredientes(ingCopy);
                     }}
                   />
                 ))}
-                <button onClick={salvarReceitaEditada}>Salvar</button>
-              </>
-            ) : isCreateModal ? (
-              <>
-                <input
-                  type="text"
-                  placeholder="Título da Receita"
-                  value={novoTitulo}
-                  onChange={(e) => setNovoTitulo(e.target.value)}
-                />
-                <textarea
-                  placeholder="Modo de Preparo"
-                  value={novoModoPreparo}
-                  onChange={(e) => setNovoModoPreparo(e.target.value)}
-                />
+                <button onClick={() => setNovosIngredientes([...novosIngredientes, ''])}>
+                  Adicionar Ingrediente
+                </button>
                 <input
                   type="text"
                   placeholder="URL da Imagem"
-                  value={novaImagem}
-                  onChange={(e) => setNovaImagem(e.target.value)}
+                  value={novaImg}
+                  onChange={(e) => setNovaImg(e.target.value)}
                 />
-                <h3>Ingredientes:</h3>
-                {novosIngredientes.map((ingrediente, idx) => (
-                  <input
-                    key={idx}
-                    type="text"
-                    placeholder={`Ingrediente ${idx + 1}`}
-                    value={ingrediente}
-                    onChange={(e) => {
-                      const newIngredientes = [...novosIngredientes];
-                      newIngredientes[idx] = e.target.value;
-                      setNovosIngredientes(newIngredientes);
-                    }}
-                  />
-                ))}
-                <button onClick={salvarNovaReceita}>Salvar Receita</button>
+                <input
+                  type="number"
+                  placeholder="Custo Aproximado"
+                  value={novoCusto}
+                  onChange={(e) => setNovoCusto(Number(e.target.value))}
+                />
+                <button onClick={isEditModal ? salvarReceitaEditada : salvarNovaReceita}>
+                  Salvar
+                </button>
               </>
             ) : (
               <>
                 <h3>Ingredientes:</h3>
-                <ul>
-                  {modalReceita?.ingredientes.map((ingrediente, idx) => (
-                    <li key={idx}>{ingrediente}</li>
-                  ))}
-                </ul>
-                <h3>Modo de Preparo:</h3>
-                <p>{modalReceita?.modoPreparo}</p>
+                <ul>{modalReceita?.ingredientes.map((i, idx) => <li key={idx}>{i}</li>)}</ul>
+                <h3>Modo de Fazer:</h3>
+                <p>{modalReceita?.modoFazer}</p>
               </>
             )}
-            <button onClick={closeModal}>Fechar</button>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Criação */}
-      {isCreateModal && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Criar Nova Receita</h2>
-            <input
-              type="text"
-              placeholder="Título"
-              value={novoTitulo}
-              onChange={(e) => setNovoTitulo(e.target.value)}
-            />
-            <textarea
-              placeholder="Modo de Preparo"
-              value={novoModoPreparo}
-              onChange={(e) => setNovoModoPreparo(e.target.value)}
-            />
-            <h3>Ingredientes:</h3>
-            {novosIngredientes.map((ingrediente, idx) => (
-              <input
-                key={idx}
-                type="text"
-                placeholder="Ingrediente"
-                value={ingrediente}
-                onChange={(e) => {
-                  const newIngredientes = [...novosIngredientes];
-                  newIngredientes[idx] = e.target.value;
-                  setNovosIngredientes(newIngredientes);
-                }}
-              />
-            ))}
-            <button onClick={() => setNovosIngredientes([...novosIngredientes, ''])}>
-              Adicionar Ingrediente
-            </button>
-            <input
-              type="text"
-              placeholder="URL da Imagem"
-              value={novaImagem}
-              onChange={(e) => setNovaImagem(e.target.value)}
-            />
-            <button onClick={salvarNovaReceita}>Salvar</button>
             <button onClick={closeModal}>Fechar</button>
           </div>
         </div>
