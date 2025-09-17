@@ -24,59 +24,40 @@ function App() {
   useEffect(() => {
     const data = [
       {
-        id: 1,
-        titulo: "Bolo de Cenoura",
-        ingredientes: [
-          "2 xícaras de cenoura ralada",
-          "1 xícara de açúcar",
-          "1/2 xícara de óleo",
-          "3 ovos",
-          "2 xícaras de farinha de trigo",
-          "1 colher de sopa de fermento em pó"
-        ],
-        modoPreparo: "Bata no liquidificador a cenoura, o açúcar, o óleo e os ovos. Misture com os ingredientes secos e asse em forno pré-aquecido a 180°C por 40 minutos.",
-        imagem: "https://cozinha365.com.br/wp-content/uploads/2025/02/Bolo-de-cenoura-S.webp"
+        id: 94,
+        titulo: "Miojo",
+        ingredientes: ["M"],
+        modoPreparo: "M",
+        imagem: "https://ogimg.infoglobo.com.br/in/25191257-11f-f6a/FT1086A/95174042_RS-Rio-de-Janeiro-RJ-09-09-2021O-chef-Rafael-cavalieri-demonstra-versoes-melhoradas-do-m.jpg",
       },
       {
-        id: 2,
-        titulo: "Pão de Queijo",
-        ingredientes: [
-          "250g de polvilho doce",
-          "100ml de leite",
-          "50ml de óleo",
-          "1 ovo",
-          "100g de queijo minas ralado",
-          "sal a gosto"
-        ],
-        modoPreparo: "Misture todos os ingredientes até formar uma massa homogênea. Modele os pães e asse em forno pré-aquecido a 180°C por 20 minutos.",
-        imagem: "https://www.receitas-sem-fronteiras.com/media/hehe-3_crop.jpg/rh/pao-de-queijo-3-ingredientes.jpg"
+        id: 98,
+        titulo: "Brigadeiro",
+        ingredientes: ["Uma lata de brigadeiro pronto"],
+        modoPreparo: "Abra a lata",
+        imagem: "https://static.itdg.com.br/images/360-240/a373f494abb2c3360b9966f5abe130e2/brigadeiro-.jpg",
       },
       {
-        id: 3,
-        titulo: "Bolo de Chocolate",
-        ingredientes: [
-          "2 xícaras de açúcar",
-          "1 xícara de manteiga",
-          "4 ovos",
-          "2 xícaras de farinha de trigo",
-          "1 xícara de chocolate em pó",
-          "1 colher de sopa de fermento em pó"
-        ],
-        modoPreparo: "Bata o açúcar com a manteiga até obter um creme. Adicione os ovos, um a um, e misture bem. Incorpore os ingredientes secos e asse em forno pré-aquecido a 180°C por 50 minutos.",
-        imagem: "https://recipesblob.oetker.com.br/assets/a81bc035eb7f407faaa2c93e04edaf78/750x910/bolo-de-aniversrio-de-chocolate.jpg"
+        id: 97,
+        titulo: "Ovo frito",
+        ingredientes: ["12 ovos"],
+        modoPreparo: "Frite os ovos",
+        imagem: "https://s2-receitas.glbimg.com/-3gVq-_w-zBEgZlnty0-HVhr00w=/0x0:237x212/984x0/smart/filters:strip_icc()/s.glbimg.com/po/rc/media/2014/01/23/22_16_39_163_images.jpg",
       },
       {
-        id: 4,
-        titulo: "Bife à Cavalo",
-        ingredientes: [
-          "4 bifes de alcatra ou contra filé",
-          "4 ovos",
-          "sal e pimenta a gosto",
-          "óleo para fritar"
-        ],
-        modoPreparo: "Tempere os bifes com sal e pimenta. Frite os bifes em uma frigideira com óleo quente. Em outra frigideira, frite os ovos. Sirva os bifes com os ovos por cima.",
-        imagem: "https://www.comidaereceitas.com.br/wp-content/uploads/2011/03/bife_cavalo.jpg"
-      }
+        id: 106,
+        titulo: "Bolo Clash Royale",
+        ingredientes: ["bolo", "clash royale"],
+        modoPreparo: "saber fazer bolo, jogar clash royale",
+        imagem: "https://i.pinimg.com/736x/db/fa/18/dbfa18309255be32153505ff93ce669d.jpg",
+      },
+      {
+        id: 92,
+        titulo: "mandioca",
+        ingredientes: ["mandioca braba"],
+        modoPreparo: "cozinhar",
+        imagem: "https://saude.abril.com.br/wp-content/uploads/2016/12/mandioca.jpg?quality=50&strip=info",
+      },
     ];
     setReceitas(data);
   }, []);
